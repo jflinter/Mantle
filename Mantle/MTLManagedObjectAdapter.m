@@ -345,8 +345,11 @@ static id performInContext(NSManagedObjectContext *context, id (^block)(void)) {
 			return nil;
 		}
 	}
-
-	if (managedObject == nil) managedObject = [entityDescriptionClass insertNewObjectForEntityForName:entityName inManagedObjectContext:context];
+	BOOL existingObjectFound = YES;
+	if (managedObject == nil) {
+		existingObjectFound = NO;
+		managedObject = [entityDescriptionClass insertNewObjectForEntityForName:entityName inManagedObjectContext:context];
+	}
 
 	if (managedObject == nil) {
 		if (error != NULL) {
@@ -361,6 +364,11 @@ static id performInContext(NSManagedObjectContext *context, id (^block)(void)) {
 		}
 
 		return nil;
+	}
+	
+	if (existingObjectFound) {
+		MTLModel<MTLManagedObjectSerializing>* existingModel = [MTLManagedObjectAdapter modelOfClass:model.class fromManagedObject:managedObject error:nil];
+		[model mergeValuesForKeysFromModel:existingModel];
 	}
 
 	// Assign all errors to this variable to work around a memory problem.
